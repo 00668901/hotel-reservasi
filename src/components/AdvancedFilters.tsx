@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Card, CardContent } from './ui/card';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { Checkbox } from './ui/checkbox';
@@ -72,6 +71,9 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
+      {/* REVISI: Pastikan SheetTrigger membungkus Button dengan asChild. 
+          Pastikan komponen Button sudah menggunakan React.forwardRef 
+      */}
       <SheetTrigger asChild>
         <Button variant="outline" className="relative">
           <SlidersHorizontal className="w-4 h-4 mr-2" />
@@ -83,7 +85,8 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
+      
+      <SheetContent className="overflow-y-auto flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Filter Pencarian</SheetTitle>
           <SheetDescription>
@@ -91,11 +94,11 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6 pb-20">
+        <div className="flex-1 overflow-y-auto py-6 space-y-8">
           {/* Price Range */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="text-base font-semibold">Rentang Harga</Label>
-            <div className="pt-2">
+            <div className="px-2">
               <Slider
                 min={0}
                 max={10000000}
@@ -105,7 +108,7 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
                   setLocalFilters({ ...localFilters, priceRange: value as [number, number] })
                 }
               />
-              <div className="flex justify-between mt-2 text-sm text-muted-foreground">
+              <div className="flex justify-between mt-3 text-sm text-muted-foreground font-medium">
                 <span>{formatPrice(localFilters.priceRange[0])}</span>
                 <span>{formatPrice(localFilters.priceRange[1])}</span>
               </div>
@@ -113,9 +116,9 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
           </div>
 
           {/* Capacity */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="text-base font-semibold">Kapasitas Minimum</Label>
-            <div className="pt-2">
+            <div className="px-2">
               <Slider
                 min={1}
                 max={6}
@@ -125,26 +128,26 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
                   setLocalFilters({ ...localFilters, capacity: value[0] })
                 }
               />
-              <div className="mt-2 text-sm text-muted-foreground">
+              <div className="mt-2 text-sm text-muted-foreground font-medium">
                 {localFilters.capacity} orang
               </div>
             </div>
           </div>
 
           {/* Amenities */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="text-base font-semibold">Fasilitas</Label>
-            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 gap-2">
               {allAmenities.map((amenity) => (
-                <div key={amenity} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted transition-colors">
+                <div key={amenity} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border">
                   <Checkbox
-                    id={amenity}
+                    id={`amenity-${amenity}`}
                     checked={localFilters.amenities.includes(amenity)}
                     onCheckedChange={() => toggleAmenity(amenity)}
                   />
                   <label
-                    htmlFor={amenity}
-                    className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
+                    htmlFor={`amenity-${amenity}`}
+                    className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 py-1"
                   >
                     {amenity}
                   </label>
@@ -154,33 +157,32 @@ export function AdvancedFilters({ filters, onFiltersChange, allAmenities }: Adva
           </div>
 
           {/* Available Only */}
-          <div className="flex items-center space-x-2 p-3 rounded-lg border bg-muted/50">
+          <div className="flex items-center space-x-3 p-4 rounded-lg border bg-muted/30">
             <Checkbox
-              id="available"
+              id="available-only"
               checked={localFilters.availableOnly}
               onCheckedChange={(checked) => 
                 setLocalFilters({ ...localFilters, availableOnly: checked as boolean })
               }
             />
             <label
-              htmlFor="available"
-              className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
+              htmlFor="available-only"
+              className="text-sm font-medium cursor-pointer leading-none flex-1"
             >
-              Hanya tampilkan kamar yang tersedia
+              Hanya tampilkan kamar tersedia
             </label>
           </div>
+        </div>
 
-          {/* Buttons */}
-          <div className="flex gap-2 pt-4 sticky bottom-0 bg-background pb-4 border-t mt-6">
-            <Button variant="outline" onClick={handleReset} className="flex-1">
-              <X className="w-4 h-4 mr-2" />
-              Reset
-            </Button>
-            <Button onClick={handleApply} className="flex-1">
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              Terapkan Filter
-            </Button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-6 border-t mt-auto bg-background">
+          <Button variant="outline" onClick={handleReset} className="flex-1">
+            <X className="w-4 h-4 mr-2" />
+            Reset
+          </Button>
+          <Button onClick={handleApply} className="flex-1">
+            Terapkan
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

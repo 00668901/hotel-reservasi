@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect } from 'react';
 import { Room, Reservation } from './types/hotel';
 import { RoomCard } from './components/RoomCard';
@@ -408,7 +409,7 @@ export default function App() {
               <CardContent className="pt-6 text-center">
                 <Phone className="w-8 h-8 mx-auto mb-3 text-primary" />
                 <p className="text-sm text-muted-foreground">Telepon</p>
-                <p>+62 21 1234 5678</p>
+                <p>+62 895 3200 61963</p>
               </CardContent>
             </Card>
             <Card>
@@ -422,7 +423,7 @@ export default function App() {
               <CardContent className="pt-6 text-center">
                 <MapPin className="w-8 h-8 mx-auto mb-3 text-primary" />
                 <p className="text-sm text-muted-foreground">Alamat</p>
-                <p>Jl. Sudirman No. 123, Jakarta</p>
+                <p>Jl. Gunadarma 21, Depok</p>
               </CardContent>
             </Card>
           </div>

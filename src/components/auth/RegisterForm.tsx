@@ -15,7 +15,7 @@ interface RegisterFormProps {
   publicAnonKey: string;
 }
 
-export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnonKey }: RegisterFormProps) {
+export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,74 +28,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const validatePassword = (password: string) => {
-    if (password.length < 6) {
-      return 'Password minimal 6 karakter';
-    }
-    return null;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    // Validasi
-    if (formData.password !== formData.confirmPassword) {
-      setError('Password dan konfirmasi password tidak cocok');
-      setLoading(false);
-      return;
-    }
-
-    const passwordError = validatePassword(formData.password);
-    if (passwordError) {
-      setError(passwordError);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-aa71f191/signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            name: formData.name
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        if (data.error?.includes('already registered')) {
-          setError('Email sudah terdaftar. Silakan gunakan email lain atau login.');
-        } else {
-          setError(data.error || 'Gagal mendaftar. Silakan coba lagi.');
-        }
-        return;
-      }
-
-      setSuccess(true);
-      toast.success('Registrasi berhasil! Silakan login dengan akun Anda.');
-      
-      setTimeout(() => {
-        onSuccess();
-      }, 2000);
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fungsi untuk mengecek kekuatan password (UI)
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return { strength: 0, label: '', color: '' };
     if (password.length < 6) return { strength: 1, label: 'Lemah', color: 'bg-red-500' };
@@ -105,19 +38,66 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
 
   const passwordStrength = getPasswordStrength(formData.password);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validasi Frontend Sederhana
+    if (formData.password !== formData.confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password minimal 6 karakter');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // --- REVISI: SEKARANG NEMBAK KE BACKEND GOLANG ---
+      const response = await fetch('http://localhost:8080/api/signup', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setSuccess(true);
+        toast.success("Pendaftaran berhasil via Golang!");
+        
+        // Pindah ke halaman login setelah 2 detik
+        setTimeout(() => {
+          onSuccess();
+        }, 2000);
+      } else {
+        setError(result.error || "Gagal mendaftar melalui server Golang");
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError("Tidak bisa terhubung ke server Golang. Pastikan backend sudah dijalankan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (success) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-      >
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
         <Card className="w-full max-w-md mx-auto">
           <CardContent className="pt-6 text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
             <h3 className="text-xl font-semibold">Registrasi Berhasil!</h3>
-            <p className="text-muted-foreground">
-              Akun Anda telah dibuat. Anda akan diarahkan ke halaman login...
-            </p>
+            <p className="text-muted-foreground">Akun Anda telah dibuat melalui Backend Golang. Mengalihkan...</p>
           </CardContent>
         </Card>
       </motion.div>
@@ -125,47 +105,26 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Buat Akun Baru</CardTitle>
-          <CardDescription className="text-center">
-            Daftar untuk mulai memesan kamar hotel
-          </CardDescription>
+          <CardTitle className="text-2xl text-center">Buat Akun Baru (Go)</CardTitle>
+          <CardDescription className="text-center">Daftar via Backend Golang untuk mulai memesan</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              </motion.div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="name">Nama Lengkap</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  disabled={loading}
-                />
+                <Input id="name" type="text" placeholder="John Doe" className="pl-10" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required disabled={loading} />
               </div>
             </div>
 
@@ -173,16 +132,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
               <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="nama@email.com"
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  disabled={loading}
-                />
+                <Input id="email" type="email" placeholder="nama@email.com" className="pl-10" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required disabled={loading} />
               </div>
             </div>
 
@@ -190,22 +140,8 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Minimal 6 karakter"
-                  className="pl-10 pr-10"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                  disabled={loading}
-                >
+                <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Minimal 6 karakter" className="pl-10 pr-10" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required disabled={loading} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground" disabled={loading}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -213,17 +149,10 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
                 <div className="space-y-1">
                   <div className="flex gap-1">
                     {[1, 2, 3].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-1 flex-1 rounded ${
-                          level <= passwordStrength.strength ? passwordStrength.color : 'bg-muted'
-                        }`}
-                      />
+                      <div key={level} className={`h-1 flex-1 rounded ${level <= passwordStrength.strength ? passwordStrength.color : 'bg-muted'}`} />
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Kekuatan password: {passwordStrength.label}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Kekuatan password: {passwordStrength.label}</p>
                 </div>
               )}
             </div>
@@ -232,50 +161,22 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, projectId, publicAnon
               <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Ketik ulang password"
-                  className="pl-10 pr-10"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                  disabled={loading}
-                >
+                <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="Ketik ulang password" className="pl-10 pr-10" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required disabled={loading} />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-muted-foreground" disabled={loading}>
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Mendaftar...
-                </>
-              ) : (
-                'Daftar'
-              )}
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mendaftar...</> : 'Daftar Sekarang'}
             </Button>
           </CardContent>
         </form>
-        <CardFooter className="flex flex-col space-y-2">
-          <div className="text-sm text-center text-muted-foreground">
+        <CardFooter>
+          <div className="text-sm text-center text-muted-foreground w-full">
             Sudah punya akun?{' '}
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-primary hover:underline font-semibold"
-              disabled={loading}
-            >
-              Masuk
-            </button>
+            <button type="button" onClick={onSwitchToLogin} className="text-primary hover:underline font-semibold" disabled={loading}>Masuk</button>
           </div>
         </CardFooter>
       </Card>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os" // PENTING: Tambahkan ini agar variabel PORT bisa terbaca
 
 	"github.com/gin-gonic/gin"
 	"github.com/supabase-community/supabase-go"
@@ -14,12 +15,11 @@ func main() {
 
 	client, _ := supabase.NewClient(sbURL, sbKey, nil)
 
-	// --- FITUR OTOMATIS (AUTO-SEED) ---
+	// --- 2. FITUR OTOMATIS (AUTO-SEED) ---
 	fmt.Println("Mengecek data kamar di database...")
 	var checkResult []map[string]interface{}
 	client.From("kv_store_aa71f191").Select("value", "exact", false).Eq("key", "rooms").ExecuteTo(&checkResult)
 
-	// Jika data kamar belum ada atau kosong, isi otomatis
 	if len(checkResult) == 0 {
 		fmt.Println("Data kosong! Mengisi 6 kamar otomatis...")
 		defaultRooms := []map[string]interface{}{
@@ -35,11 +35,10 @@ func main() {
 	} else {
 		fmt.Println("Data kamar sudah tersedia.")
 	}
-	// --- SELESAI AUTO-SEED ---
 
 	r := gin.Default()
 
-	// Middleware CORS
+	// 3. MIDDLEWARE CORS
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
@@ -51,7 +50,7 @@ func main() {
 		c.Next()
 	})
 
-	// Endpoint Ambil Kamar
+	// 4. ENDPOINTS
 	r.GET("/api/rooms", func(c *gin.Context) {
 		var result []map[string]interface{}
 		client.From("kv_store_aa71f191").Select("value", "exact", false).Eq("key", "rooms").ExecuteTo(&result)
@@ -62,7 +61,6 @@ func main() {
 		}
 	})
 
-	// Endpoint Ambil Reservasi
 	r.GET("/api/reservations", func(c *gin.Context) {
 		var result []map[string]interface{}
 		client.From("kv_store_aa71f191").Select("value", "exact", false).Eq("key", "reservations").ExecuteTo(&result)
@@ -73,11 +71,15 @@ func main() {
 		}
 	})
 
-	// Endpoint Signup
 	r.POST("/api/signup", func(c *gin.Context) {
 		c.JSON(200, gin.H{"success": true, "message": "Handle by Golang"})
 	})
 
-	fmt.Println("Server running on http://localhost:8080")
-	r.Run(":8080")
+	// 5. RUN SERVER DENGAN PORT DINAMIS
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Println("Server running on port:", port)
+	r.Run(":" + port)
 }
